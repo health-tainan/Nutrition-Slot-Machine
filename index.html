@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>均衡配餐助手 | 六大類份量與三餐靈感</title>
+  <!-- 引入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入 Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .animate-spin-fast { animation: spin 0.5s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    /* 用於手風琴平滑展開的過渡效果 */
+    .accordion-content { transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#F9FAFB] p-3 md:p-6 text-stone-800 selection:bg-emerald-200">
+  <div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- Header -->
+    <header class="bg-white/80 backdrop-blur-xl sticky top-2 z-50 p-3 rounded-full shadow-sm border border-white/50 flex items-center justify-between">
+      <div class="flex items-center gap-2 pl-2">
+        <div class="bg-gradient-to-br from-emerald-400 to-teal-500 text-white p-2 rounded-full">
+          <i data-lucide="carrot" class="w-5 h-5"></i>
+        </div>
+        <h1 class="text-lg font-black text-emerald-700 hidden sm:block">均衡配餐助手：六大類份量與三餐靈感</h1>
+      </div>
+    </header>
+
+    <!-- 專屬配餐目標區塊 -->
+    <section class="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-stone-100">
+      <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-6 gap-2">
+        <div>
+          <h2 class="text-xl font-black text-stone-800 flex items-center gap-2">
+            <i data-lucide="clipboard-list" class="w-6 h-6 text-emerald-500"></i> 專屬配餐目標
+          </h2>
+          <p class="text-sm text-stone-400 mt-1 font-medium">調整各類別份數，系統將自動為您規劃三餐</p>
+        </div>
+      </div>
+      
+      <!-- 這個 grid 會由 JavaScript 負責動態填入所有分類目標與配餐指引 -->
+      <div id="goals-container" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      </div>
+    </section>
+
+    <!-- 一鍵三餐產生器區塊 -->
+    <section class="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-stone-100 relative overflow-hidden">
+      <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-gradient-to-br from-teal-50 to-emerald-50 blur-3xl opacity-60 pointer-events-none"></div>
+
+      <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <h2 class="text-xl font-black text-stone-800 flex items-center gap-2">
+          <i data-lucide="dices" class="w-6 h-6 text-teal-500"></i> 一鍵三餐產生器
+        </h2>
+        
+        <button id="spin-btn" class="w-full md:w-auto px-6 py-3.5 rounded-2xl font-black text-white bg-gradient-to-r from-teal-500 to-emerald-500 hover:shadow-[0_8px_20px_rgb(16,185,129,0.3)] hover:-translate-y-0.5 flex items-center justify-center gap-2 transition-all active:scale-95">
+          <i data-lucide="sparkles" class="w-5 h-5"></i>
+          <span>開始拉霸配餐</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+        <!-- 早餐 -->
+        <div class="bg-white rounded-2xl p-5 shadow-[0_2px_15px_rgb(0,0,0,0.03)] border border-stone-100 relative group overflow-hidden transition-all hover:shadow-[0_8px_25px_rgb(0,0,0,0.06)]">
+          <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-400 opacity-80"></div>
+          <div class="flex justify-between items-center mt-1">
+            <span class="text-sm font-black text-stone-800 tracking-wide">早餐 Breakfast</span>
+          </div>
+          <div id="menu-breakfast" class="mt-4 flex flex-col gap-2 min-h-[4rem]">
+            <div class="text-stone-400 text-sm">等待配餐...</div>
+          </div>
+        </div>
+        <!-- 午餐 -->
+        <div class="bg-white rounded-2xl p-5 shadow-[0_2px_15px_rgb(0,0,0,0.03)] border border-stone-100 relative group overflow-hidden transition-all hover:shadow-[0_8px_25px_rgb(0,0,0,0.06)]">
+          <div class="absolute top-0 left-0 w-full h-1.5 bg-orange-400 opacity-80"></div>
+          <div class="flex justify-between items-center mt-1">
+            <span class="text-sm font-black text-stone-800 tracking-wide">午餐 Lunch</span>
+          </div>
+          <div id="menu-lunch" class="mt-4 flex flex-col gap-2 min-h-[4rem]">
+            <div class="text-stone-400 text-sm">等待配餐...</div>
+          </div>
+        </div>
+        <!-- 晚餐 -->
+        <div class="bg-white rounded-2xl p-5 shadow-[0_2px_15px_rgb(0,0,0,0.03)] border border-stone-100 relative group overflow-hidden transition-all hover:shadow-[0_8px_25px_rgb(0,0,0,0.06)]">
+          <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-400 opacity-80"></div>
+          <div class="flex justify-between items-center mt-1">
+            <span class="text-sm font-black text-stone-800 tracking-wide">晚餐 Dinner</span>
+          </div>
+          <div id="menu-dinner" class="mt-4 flex flex-col gap-2 min-h-[4rem]">
+            <div class="text-stone-400 text-sm">等待配餐...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 份量說明區塊 (改為手風琴折疊設計) -->
+    <section class="bg-white p-5 md:p-8 rounded-3xl shadow-sm border border-stone-100">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="p-2 bg-stone-100 rounded-xl text-stone-500">
+          <i data-lucide="book-open" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-black text-stone-800">六大類食物「一份」是多少？</h2>
+          <p class="text-xs text-stone-400 font-medium mt-0.5">點擊各類別，查看精確份量與快速視覺估算技巧</p>
+        </div>
+      </div>
+      
+      <div class="flex flex-col gap-3">
+        <!-- 全穀雜糧類 -->
+        <div class="border border-amber-200 rounded-2xl overflow-hidden bg-amber-50/40">
+          <button class="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-amber-100/50 transition-colors" onclick="toggleAccordion('acc-grains', 'icon-grains')">
+            <div class="flex items-center gap-3">
+              <span class="p-2 bg-amber-100 text-amber-700 rounded-lg"><i data-lucide="wheat" class="w-5 h-5"></i></span>
+              <div>
+                <h3 class="font-black text-amber-800">全穀雜糧類</h3>
+                <p class="text-xs text-amber-600/80">提供主要能量 (約 70 大卡/份)</p>
+              </div>
+            </div>
+            <i data-lucide="chevron-down" id="icon-grains" class="w-5 h-5 text-amber-500 transition-transform duration-300"></i>
+          </button>
+          <div id="acc-grains" class="hidden px-5 pb-5">
+            <div class="space-y-2 mt-2">
+              <div class="bg-white p-3 rounded-xl border border-amber-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-amber-800">白飯、糙米飯、五穀飯</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1/4 碗 (40g)</div>
+                  <div class="text-amber-700 font-medium"><span class="bg-amber-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 體積約 1 顆乒乓球大小</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-amber-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-amber-800">熟麵條、米粉、冬粉</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1/2 碗 (60g)</div>
+                  <div class="text-amber-700 font-medium"><span class="bg-amber-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 半個標準飯碗</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-amber-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-amber-800">薄片吐司</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1/2 片 (25g)</div>
+                  <div class="text-amber-700 font-medium"><span class="bg-amber-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 一般切片吐司的半片</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-amber-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-amber-800">地瓜、芋頭、馬鈴薯</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1/2 碗 (55-90g)</div>
+                  <div class="text-amber-700 font-medium"><span class="bg-amber-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 約半個拳頭大小</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-amber-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-amber-800">燕麥片</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 3 平湯匙 (20g)</div>
+                  <div class="text-amber-700 font-medium"><span class="bg-amber-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 免洗湯匙 3 匙 / 隨手抓 1 小把</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 豆魚蛋肉類 -->
+        <div class="border border-rose-200 rounded-2xl overflow-hidden bg-rose-50/40">
+          <button class="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-rose-100/50 transition-colors" onclick="toggleAccordion('acc-protein', 'icon-protein')">
+            <div class="flex items-center gap-3">
+              <span class="p-2 bg-rose-100 text-rose-700 rounded-lg"><i data-lucide="beef" class="w-5 h-5"></i></span>
+              <div>
+                <h3 class="font-black text-rose-800">豆魚蛋肉類</h3>
+                <p class="text-xs text-rose-600/80">建構身體組織 (約 75 大卡/份)</p>
+              </div>
+            </div>
+            <i data-lucide="chevron-down" id="icon-protein" class="w-5 h-5 text-rose-500 transition-transform duration-300"></i>
+          </button>
+          <div id="acc-protein" class="hidden px-5 pb-5">
+            <div class="space-y-2 mt-2">
+              <div class="bg-white p-3 rounded-xl border border-rose-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-rose-800">無糖豆漿</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1 杯 (190ml)</div>
+                  <div class="text-rose-700 font-medium"><span class="bg-rose-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 常見 200ml 小包裝鋁箔包</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-rose-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-rose-800">傳統豆腐 / 嫩豆腐</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 3 小格 (80g) / 半盒 (140g)</div>
+                  <div class="text-rose-700 font-medium"><span class="bg-rose-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 約半個手掌心大小</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-rose-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-rose-800">各類瘦肉、海鮮</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1 兩 (30-35g)</div>
+                  <div class="text-rose-700 font-medium"><span class="bg-rose-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 厚度與大小約 3 根手指幅</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-rose-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-rose-800">雞蛋</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1 顆</div>
+                  <div class="text-rose-700 font-medium"><span class="bg-rose-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 標準大小 1 顆</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 乳品類 -->
+        <div class="border border-sky-200 rounded-2xl overflow-hidden bg-sky-50/40">
+          <button class="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-sky-100/50 transition-colors" onclick="toggleAccordion('acc-dairy', 'icon-dairy')">
+            <div class="flex items-center gap-3">
+              <span class="p-2 bg-sky-100 text-sky-700 rounded-lg"><i data-lucide="milk" class="w-5 h-5"></i></span>
+              <div>
+                <h3 class="font-black text-sky-800">乳品類</h3>
+                <p class="text-xs text-sky-600/80">鈣質與維生素 B2 (約 120 大卡/份)</p>
+              </div>
+            </div>
+            <i data-lucide="chevron-down" id="icon-dairy" class="w-5 h-5 text-sky-500 transition-transform duration-300"></i>
+          </button>
+          <div id="acc-dairy" class="hidden px-5 pb-5">
+            <div class="space-y-2 mt-2">
+              <div class="bg-white p-3 rounded-xl border border-sky-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-sky-800">鮮乳、保久乳、無糖優酪乳</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1 杯 (240ml)</div>
+                  <div class="text-sky-700 font-medium"><span class="bg-sky-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 標準馬克杯約 8 分滿</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-sky-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-sky-800">原味優格</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1 罐 (210g)</div>
+                  <div class="text-sky-700 font-medium"><span class="bg-sky-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 市售常見小盒裝 1 盒</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-sky-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-sky-800">起司 (乳酪)</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 2 片 (45g)</div>
+                  <div class="text-sky-700 font-medium"><span class="bg-sky-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 常見漢堡夾的切片起司 2 片</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 蔬菜類 -->
+        <div class="border border-emerald-200 rounded-2xl overflow-hidden bg-emerald-50/40">
+          <button class="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-emerald-100/50 transition-colors" onclick="toggleAccordion('acc-veg', 'icon-veg')">
+            <div class="flex items-center gap-3">
+              <span class="p-2 bg-emerald-100 text-emerald-700 rounded-lg"><i data-lucide="carrot" class="w-5 h-5"></i></span>
+              <div>
+                <h3 class="font-black text-emerald-800">蔬菜類</h3>
+                <p class="text-xs text-emerald-600/80">膳食纖維與微量元素 (約 25 大卡/份)</p>
+              </div>
+            </div>
+            <i data-lucide="chevron-down" id="icon-veg" class="w-5 h-5 text-emerald-500 transition-transform duration-300"></i>
+          </button>
+          <div id="acc-veg" class="hidden px-5 pb-5">
+            <div class="space-y-2 mt-2">
+              <div class="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-emerald-800">煮熟的蔬菜 (葉菜/菇類)</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 半碗 (50-80g)</div>
+                  <div class="text-emerald-700 font-medium"><span class="bg-emerald-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 夾起來約單手抓滿 1 握</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-emerald-800">生菜沙拉</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 100g</div>
+                  <div class="text-emerald-700 font-medium"><span class="bg-emerald-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 蓬鬆狀態約雙手抓滿 1 捧</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-emerald-800">大番茄</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1 顆 (100g)</div>
+                  <div class="text-emerald-700 font-medium"><span class="bg-emerald-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 1 顆棒球大小</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 水果類 -->
+        <div class="border border-orange-200 rounded-2xl overflow-hidden bg-orange-50/40">
+          <button class="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-orange-100/50 transition-colors" onclick="toggleAccordion('acc-fruit', 'icon-fruit')">
+            <div class="flex items-center gap-3">
+              <span class="p-2 bg-orange-100 text-orange-700 rounded-lg"><i data-lucide="apple" class="w-5 h-5"></i></span>
+              <div>
+                <h3 class="font-black text-orange-800">水果類</h3>
+                <p class="text-xs text-orange-600/80">維生素 C 與天然酵素 (約 60 大卡/份)</p>
+              </div>
+            </div>
+            <i data-lucide="chevron-down" id="icon-fruit" class="w-5 h-5 text-orange-500 transition-transform duration-300"></i>
+          </button>
+          <div id="acc-fruit" class="hidden px-5 pb-5">
+            <div class="space-y-2 mt-2">
+              <div class="bg-white p-3 rounded-xl border border-orange-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-orange-800">切塊水果 (西瓜/芭樂/鳳梨)</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 約 1 碗</div>
+                  <div class="text-orange-700 font-medium"><span class="bg-orange-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 標準飯碗平裝 1 滿碗</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-orange-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-orange-800">中型水果 (蘋果/橘子/柳丁)</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1 顆</div>
+                  <div class="text-orange-700 font-medium"><span class="bg-orange-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 體積約 1 顆棒球大小</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-orange-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-orange-800">香蕉</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 半根 (70g)</div>
+                  <div class="text-orange-700 font-medium"><span class="bg-orange-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 大香蕉半根，或小芭蕉 1 根</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-orange-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-orange-800">小番茄、葡萄</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 約 10-13 顆</div>
+                  <div class="text-orange-700 font-medium"><span class="bg-orange-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 雙手捧起來約 1 捧</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 油脂堅果類 -->
+        <div class="border border-yellow-200 rounded-2xl overflow-hidden bg-yellow-50/40">
+          <button class="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-yellow-100/50 transition-colors" onclick="toggleAccordion('acc-fats', 'icon-fats')">
+            <div class="flex items-center gap-3">
+              <span class="p-2 bg-yellow-100 text-yellow-700 rounded-lg"><i data-lucide="nut" class="w-5 h-5"></i></span>
+              <div>
+                <h3 class="font-black text-yellow-800">油脂與堅果種子類</h3>
+                <p class="text-xs text-yellow-600/80">必需脂肪酸 (約 45 大卡/份)</p>
+              </div>
+            </div>
+            <i data-lucide="chevron-down" id="icon-fats" class="w-5 h-5 text-yellow-500 transition-transform duration-300"></i>
+          </button>
+          <div id="acc-fats" class="hidden px-5 pb-5">
+            <div class="space-y-2 mt-2">
+              <div class="bg-white p-3 rounded-xl border border-yellow-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-yellow-800">各式食用油 (如橄欖油)</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1 茶匙 (5g)</div>
+                  <div class="text-yellow-700 font-medium"><span class="bg-yellow-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 塑膠免洗湯匙的 1/3</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-yellow-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-yellow-800">花生、夏威夷豆</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 10 粒 / 5 粒</div>
+                  <div class="text-yellow-700 font-medium"><span class="bg-yellow-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 喝湯用的鐵湯匙平鋪 1 匙</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-yellow-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-yellow-800">杏仁果、核桃仁</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 5 粒 / 2 粒</div>
+                  <div class="text-yellow-700 font-medium"><span class="bg-yellow-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 喝湯用的鐵湯匙平鋪 1 匙</div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-yellow-100 shadow-sm flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+                <div class="font-bold text-yellow-800">酪梨 (屬油脂類)</div>
+                <div class="flex flex-col gap-1">
+                  <div class="text-stone-600"><span class="bg-stone-100 px-2 py-0.5 rounded text-xs mr-1">精確</span> 1/6 顆 (40g)</div>
+                  <div class="text-yellow-700 font-medium"><span class="bg-yellow-50 px-2 py-0.5 rounded text-xs mr-1">視覺</span> 切片約 2 根手指寬度</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // --- 1. 資料庫與設定 ---
+    const NUTRITION_GROUPS = [
+      { id: 'grains', name: '全穀雜糧', defaultGoal: 3, ratios: [0.3, 0.4, 0.3], unit: '碗', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: 'wheat', step: 0.5 },
+      { id: 'protein', name: '豆魚蛋肉', defaultGoal: 5, ratios: [0.3, 0.4, 0.3], unit: '份', color: 'text-rose-500', bgColor: 'bg-rose-50', icon: 'beef', step: 0.5 },
+      { id: 'dairy', name: '乳品類', defaultGoal: 1.5, ratios: [0.5, 0, 0.5], unit: '杯', color: 'text-sky-500', bgColor: 'bg-sky-50', icon: 'milk', step: 0.5 },
+      { id: 'veg', name: '蔬菜類', defaultGoal: 4, ratios: [0.2, 0.4, 0.4], unit: '份', color: 'text-emerald-500', bgColor: 'bg-emerald-50', icon: 'carrot', step: 0.5 },
+      { id: 'fruit', name: '水果類', defaultGoal: 3, ratios: [0.5, 0.5, 0], unit: '份', color: 'text-orange-500', bgColor: 'bg-orange-50', icon: 'apple', step: 0.5 },
+      { id: 'fats', name: '油脂堅果', defaultGoal: 5, ratios: [0.3, 0.4, 0.3], unit: '份', color: 'text-yellow-600', bgColor: 'bg-yellow-50', icon: 'nut', step: 0.5 },
+      { id: 'water', name: '水分', defaultGoal: 1680, ratios: [0.3, 0.4, 0.3], unit: 'cc', color: 'text-cyan-500', bgColor: 'bg-cyan-50', icon: 'droplets', step: 240, excludeFromSlot: true }
+    ];
+
+    const INGREDIENTS_DB = {
+      grains: [{ name: '白飯', emoji: '🍚' }, { name: '糙米飯', emoji: '🍚' }, { name: '五穀飯', emoji: '🍚' }, { name: '白麵條', emoji: '🍜' }, { name: '蕎麥麵', emoji: '🍜' }, { name: '烏龍麵', emoji: '🍜' }, { name: '吐司', emoji: '🍞', unit: '片', multiplier: 4 }, { name: '地瓜', emoji: '🍠', unit: '條', multiplier: 2, weightPerUnit: 110 }],
+      protein: [{ name: '水煮蛋', emoji: '🥚' }, { name: '無糖豆漿', emoji: '🥛' }, { name: '雞胸肉', emoji: '🍗' }, { name: '烤鮭魚', emoji: '🐟' }, { name: '滷豆腐', emoji: '🧊' }, { name: '瘦豬肉片', emoji: '🥩' }, { name: '毛豆', emoji: '🫛' }, { name: '清蒸魚', emoji: '🐠' }, { name: '煎牛排', emoji: '🥩' }, { name: '滷雞腿', emoji: '🍗' }, { name: '鮮蝦', emoji: '🦐' }, { name: '蛤蜊', emoji: '🦪' }, { name: '花枝', emoji: '🦑' }, { name: '茶葉蛋', emoji: '🥚' }, { name: '鷹嘴豆', emoji: '🧆' }],
+      dairy: [{ name: '鮮奶', emoji: '🥛', unit: '杯' }, { name: '無糖優格', emoji: '🥣', unit: '杯' }, { name: '起司片', emoji: '🧀', unit: '片', multiplier: 1 }, { name: '低脂拿鐵', emoji: '☕', unit: '杯' }, { name: '希臘優格', emoji: '🍨', unit: '杯' }, { name: '保久乳', emoji: '🧃', unit: '杯' }],
+      veg: [{ name: '生菜沙拉', emoji: '🥗' }, { name: '燙秋葵', emoji: '🥒' }, { name: '炒高麗菜', emoji: '🥬' }, { name: '蒜炒菠菜', emoji: '🥬' }, { name: '涼拌木耳', emoji: '🍄' }, { name: '綜合菇湯', emoji: '🍲' }, { name: '燙青花菜', emoji: '🥦' }, { name: '番茄炒蛋', emoji: '🍅' }, { name: '燙地瓜葉', emoji: '🌿' }, { name: '炒空心菜', emoji: '🌿' }, { name: '滷海帶', emoji: '🥬' }, { name: '涼拌小黃瓜', emoji: '🥒' }],
+      fruit: [{ name: '香蕉', emoji: '🍌' }, { name: '蘋果', emoji: '🍎' }, { name: '芭樂', emoji: '🍐' }, { name: '奇異果', emoji: '🥝' }, { name: '小番茄', emoji: '🍅' }, { name: '葡萄', emoji: '🍇' }, { name: '火龍果', emoji: '🐉' }, { name: '西瓜', emoji: '🍉' }, { name: '木瓜', emoji: '🥭' }],
+      fats: [{ name: '綜合堅果', emoji: '🥜' }, { name: '橄欖油拌菜', emoji: '🫒' }, { name: '杏仁', emoji: '🌰' }, { name: '酪梨', emoji: '🥑' }, { name: '黑芝麻', emoji: '🧂' }],
+      water: []
+    };
+
+    // --- 2. 應用程式狀態 (State) 與 LocalStorage ---
+    const defaultGoals = { grains: 3, protein: 5, dairy: 1.5, veg: 4, fruit: 3, fats: 5, water: 1680 };
+    
+    const savedGoalsStr = localStorage.getItem('dietGoals');
+    const parsedGoals = savedGoalsStr ? JSON.parse(savedGoalsStr) : {};
+    let goals = { ...defaultGoals, ...parsedGoals };
+    
+    let mealPlan = {};
+    let isSpinning = false;
+
+    // --- 3. 畫面渲染邏輯 ---
+    function renderGoals() {
+      const container = document.getElementById('goals-container');
+      container.innerHTML = ''; 
+      
+      NUTRITION_GROUPS.forEach(g => {
+        container.innerHTML += `
+          <div class="bg-slate-50 p-4 rounded-2xl border border-stone-100 flex flex-col items-center group hover:border-emerald-200 hover:bg-white transition-all shadow-sm">
+            <div class="${g.bgColor} ${g.color} p-3 rounded-full mb-2 transition-transform group-hover:scale-110">
+              <i data-lucide="${g.icon}" class="w-6 h-6"></i>
+            </div>
+            <span class="font-bold text-stone-700">${g.name}</span>
+            <span class="text-xs text-stone-400 mb-2 font-bold">${g.unit}/日</span>
+            
+            <div class="flex items-center bg-white rounded-full shadow-[0_2px_8px_rgb(0,0,0,0.05)] border border-stone-100 p-1 w-full justify-between">
+              <button onclick="updateGoal('${g.id}', -${g.step})" class="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-emerald-600 bg-stone-50 rounded-full active:scale-90 transition-all"><i data-lucide="minus" class="w-4 h-4"></i></button>
+              <span class="font-black text-sm text-stone-700">${goals[g.id]}</span>
+              <button onclick="updateGoal('${g.id}', ${g.step})" class="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-emerald-600 bg-stone-50 rounded-full active:scale-90 transition-all"><i data-lucide="plus" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML += `
+        <div class="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 p-4 rounded-2xl border border-indigo-100/60 flex flex-col items-center justify-center text-center gap-2 shadow-sm">
+          <div class="bg-indigo-100/80 p-3 rounded-full text-indigo-600 mb-1">
+            <i data-lucide="info" class="w-6 h-6"></i>
+          </div>
+          <span class="text-[15px] font-black text-indigo-800">配餐指引</span>
+          <p class="text-[11px] text-indigo-600/90 font-medium leading-relaxed mt-1">
+            系統會依目標分配三餐。<br/>全穀類自動代換：<br/><strong class="text-indigo-800">1碗飯 = 4片吐司 = 2條地瓜</strong>
+          </p>
+        </div>
+      `;
+
+      lucide.createIcons(); 
+      calculatePlan(); 
+    }
+
+    // --- 4. 核心邏輯與互動 ---
+    window.updateGoal = function(id, delta) {
+      goals[id] = Math.max(0, goals[id] + delta);
+      localStorage.setItem('dietGoals', JSON.stringify(goals));
+      renderGoals();
+    };
+
+    function calculatePlan() {
+      NUTRITION_GROUPS.forEach(g => {
+        if (g.excludeFromSlot) return; 
+        const total = goals[g.id];
+        let b = Math.round((total * g.ratios[0]) * 2) / 2;
+        let remaining = total - b;
+        let l = Math.round((total * g.ratios[1]) * 2) / 2;
+        if (l > remaining) l = remaining;
+        remaining -= l;
+        mealPlan[g.id] = { breakfast: b, lunch: l, dinner: remaining };
+      });
+    }
+
+    function generateDynamicMeal(mealType) {
+      let html = '';
+      NUTRITION_GROUPS.forEach(g => {
+        if (g.excludeFromSlot) return; 
+        
+        const amount = mealPlan[g.id]?.[mealType] || 0;
+        if (amount > 0) {
+          const items = INGREDIENTS_DB[g.id];
+          const food = items[Math.floor(Math.random() * items.length)];
+          const unit = food.unit || g.unit;
+          const finalAmount = food.multiplier ? amount * food.multiplier : amount;
+          
+          let amountStr = `${finalAmount}${unit}`;
+          if (food.weightPerUnit) {
+            amountStr += ` (約${Math.round(finalAmount * food.weightPerUnit)}g)`;
+          }
+          
+          html += `
+            <div class="flex items-center justify-between px-3 py-2 rounded-xl border border-white ${g.bgColor}">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">${food.emoji}</span>
+                <span class="text-sm font-bold ${g.color}">${food.name}</span>
+              </div>
+              <span class="text-xs bg-white px-2 py-1 rounded font-bold text-stone-600 shadow-sm">${amountStr}</span>
+            </div>
+          `;
+        }
+      });
+      return html || '<div class="text-sm text-stone-400 py-2">輕斷食 / 喝水休息 💧</div>';
+    }
+
+    // 手風琴 (Accordion) 切換邏輯
+    window.toggleAccordion = function(contentId, iconId) {
+      const content = document.getElementById(contentId);
+      const icon = document.getElementById(iconId);
+      
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+      } else {
+        content.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+      }
+    }
+
+    document.getElementById('spin-btn').addEventListener('click', () => {
+      if (isSpinning) return;
+      isSpinning = true;
+      const btn = document.getElementById('spin-btn');
+      btn.innerHTML = '<i data-lucide="refresh-cw" class="w-5 h-5 animate-spin-fast"></i> <span>為您配餐中...</span>';
+      lucide.createIcons();
+
+      let counter = 0;
+      const interval = setInterval(() => {
+        ['breakfast', 'lunch', 'dinner'].forEach(type => {
+          document.getElementById(`menu-${type}`).innerHTML = generateDynamicMeal(type);
+        });
+        
+        counter++;
+        if (counter > 10) {
+          clearInterval(interval);
+          isSpinning = false;
+          btn.innerHTML = '<i data-lucide="sparkles" class="w-5 h-5"></i> <span>開始拉霸配餐</span>';
+          lucide.createIcons();
+          
+          const currentMenuHTML = {
+            breakfast: document.getElementById('menu-breakfast').innerHTML,
+            lunch: document.getElementById('menu-lunch').innerHTML,
+            dinner: document.getElementById('menu-dinner').innerHTML
+          };
+          localStorage.setItem('dietMenu', JSON.stringify(currentMenuHTML));
+        }
+      }, 100);
+    });
+
+    // 初始化
+    renderGoals();
+    const savedMenuStr = localStorage.getItem('dietMenu');
+    if (savedMenuStr) {
+      const savedMenu = JSON.parse(savedMenuStr);
+      document.getElementById('menu-breakfast').innerHTML = savedMenu.breakfast;
+      document.getElementById('menu-lunch').innerHTML = savedMenu.lunch;
+      document.getElementById('menu-dinner').innerHTML = savedMenu.dinner;
+    }
+  </script>
+</body>
+</html>
